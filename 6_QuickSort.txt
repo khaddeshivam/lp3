@@ -1,0 +1,108 @@
+#include <iostream>      // For input/output
+#include <cstdlib>       // For rand() and srand()
+#include <ctime>         // To use current time as seed for randomness
+using namespace std;
+
+// Global counters to track number of steps (comparisons)
+long long detSteps = 0, randSteps = 0;
+
+// -----------------------------------------------------------
+// PARTITION FUNCTION (Used in Deterministic QuickSort)
+// -----------------------------------------------------------
+int partition(int arr[], int low, int high, long long &steps) {
+
+    int pivot = arr[high];       // Pivot selected as last element
+    int i = low - 1;             // i keeps track of elements <= pivot
+
+    // Loop through array from low to high-1
+    for (int j = low; j < high; j++) {
+
+        steps++;                 // Counting every comparison
+
+        if (arr[j] <= pivot) {   // If current element <= pivot
+            swap(arr[++i], arr[j]);  // Move it left side of pivot group
+        }
+    }
+
+    // Place pivot in correct sorted position
+    swap(arr[i + 1], arr[high]);
+
+    return i + 1; // Return pivot index
+}
+
+// -----------------------------------------------------------
+// RANDOM PARTITION (Used in Randomized QuickSort)
+// -----------------------------------------------------------
+int randomPartition(int arr[], int low, int high, long long &steps) {
+
+    // Select random pivot index between low and high
+    int randIndex = low + rand() % (high - low + 1);
+
+    swap(arr[randIndex], arr[high]);  // Bring random pivot to end
+
+    // Call normal partition now
+    return partition(arr, low, high, steps);
+}
+
+// -----------------------------------------------------------
+// DETERMINISTIC QUICKSORT
+// -----------------------------------------------------------
+void quickSortDet(int arr[], int low, int high) {
+
+    if (low < high) {  // Only process if atleast 2 elements
+
+        int pi = partition(arr, low, high, detSteps); // Fix pivot position
+
+        quickSortDet(arr, low, pi - 1); // Sort left part
+        quickSortDet(arr, pi + 1, high); // Sort right part
+    }
+}
+
+// -----------------------------------------------------------
+// RANDOMIZED QUICKSORT
+// -----------------------------------------------------------
+void quickSortRand(int arr[], int low, int high) {
+
+    if (low < high) {
+
+        int pi = randomPartition(arr, low, high, randSteps); // Random pivot
+
+        quickSortRand(arr, low, pi - 1);   // Sort left
+        quickSortRand(arr, pi + 1, high);  // Sort right
+    }
+}
+
+// -----------------------------------------------------------
+// MAIN FUNCTION
+// -----------------------------------------------------------
+int main() {
+
+    srand(time(0)); // Seeding random number generator
+
+    int n;
+    cout << "Enter number of elements: ";
+    cin >> n;
+
+    int arr1[n], arr2[n]; // Two arrays: one for deterministic, one for random
+
+    cout << "Enter elements: ";
+    for (int i = 0; i < n; i++)
+        cin >> arr1[i], arr2[i] = arr1[i];  // Copy same input to arr2
+
+    // Call deterministic quicksort
+    quickSortDet(arr1, 0, n - 1);
+
+    // Call randomized quicksort
+    quickSortRand(arr2, 0, n - 1);
+
+    // Output sorted arrays
+    cout << "\nDeterministic QuickSort: ";
+    for (int x : arr1) cout << x << " ";
+
+    cout << "\nSteps (approx comparisons): " << detSteps;
+
+    cout << "\n\nRandomized QuickSort: ";
+    for (int x : arr2) cout << x << " ";
+
+    cout << "\nSteps (approx comparisons): " << randSteps << "\n";
+}
