@@ -1,0 +1,86 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+/**
+ * @title ProductInventory
+ * @dev Inventory system allowing receiving, selling and viewing products.
+ */
+contract ProductInventory {
+
+    struct Product {
+        uint256 id;
+        string name;
+        uint256 price;
+        uint256 stock;
+    }
+
+    mapping(uint256 => Product) private productList;
+    uint256[] private productIds;
+
+    event ProductReceived(uint256 id, string name, uint256 quantity, uint256 totalStock);
+    event ProductSold(uint256 id, uint256 quantity, uint256 remainingStock);
+
+    /// @notice Add or restock a product
+    function receiveProduct(
+        uint256 _id,
+        string memory _name,
+        uint256 _price,
+        uint256 _quantity
+    ) 
+        public 
+    {
+        require(_id > 0, "Invalid ID");
+        require(_quantity > 0, "Quantity must be > 0");
+        require(bytes(_name).length > 0, "Product name required");
+        require(_price > 0, "Price must be > 0");
+
+        Product storage p = productList[_id];
+
+        if (p.id == 0) {
+            // Create new product
+            productList[_id] = Product(_id, _name, _price, _quantity);
+            productIds.push(_id);
+        } else {
+            // If product exists, ensure metadata consistency
+            require(
+                keccak256(bytes(p.name)) == keccak256(bytes(_name)),
+                "Name mismatch for existing product"
+            );
+            require(_price == p.price, "Price mismatch for existing product");
+
+            p.stock += _quantity;
+        }
+
+        emit ProductReceived(_id, _name, _quantity, productList[_id].stock);
+    }
+
+    /// @notice Sell the product
+    function sellProduct(uint256 _id, uint256 _quantity) public {
+        require(_id > 0, "Invalid ID");
+        require(_quantity > 0, "Quantity must be > 0");
+
+        Product storage p = productList[_id];
+        require(p.id != 0, "Product not found");
+        require(p.stock >= _quantity, "Insufficient stock");
+
+        // Reduce stock
+        p.stock -= _quantity;
+
+        emit ProductSold(_id, _quantity, p.stock);
+    }
+
+    /// @notice Get details of a single product
+    function getProduct(uint256 _id) public view returns (Product memory) {
+        require(productList[_id].id != 0, "Product not found");
+        return productList[_id];
+    }
+
+    /// @notice Get all products
+    function getAllProducts() public view returns (Product[] memory) {
+        Product[] memory all = new Product[](productIds.length);
+        for (uint256 i = 0; i < productIds.length; i++) {
+            all[i] = productList[productIds[i]];
+        }
+        return all;
+    }
+}
